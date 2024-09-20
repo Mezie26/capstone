@@ -7,22 +7,17 @@ import {
   Image,
   TextInput,
   Pressable,
-  ImageBackground,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 
-
-export default function Profile({ SetisOnboardingCompleted, ...props }) {
-  const [image, setImage] = useState(false);
+export default function Profile({ SetisOnboardingCompleted }) {
+  const [image, setImage] = useState(null);
   const [lastname, setLastname] = useState("");
   const [phonenumber, setPhonenumber] = useState("");
   const [firstname, setFirstname] = useState("");
   const [email, setEmail] = useState("");
-  const navigation = useNavigation(); // Initialize the navigation hook
 
-  // Fetch login details from AsyncStorage when the component mounts
   const getLoginDetails = async () => {
     try {
       const LoginDetails = await AsyncStorage.multiGet([
@@ -33,15 +28,11 @@ export default function Profile({ SetisOnboardingCompleted, ...props }) {
         "phonenumber",
       ]);
 
-      //const placeholder = () => (firstname.charAt(0) + email.charAt(0));
-
-      const image = JSON.parse(LoginDetails[0][1]);
-      const firstname = LoginDetails[1][1] || ""; // handle empty values
+      const image = JSON.parse(LoginDetails[0][1]) || null; // Use null if no image
+      const firstname = LoginDetails[1][1] || "";
       const email = LoginDetails[2][1] || "";
       const lastname = LoginDetails[3][1] || "";
       const phonenumber = LoginDetails[4][1] || "";
-
-      
 
       setImage(image);
       setFirstname(firstname);
@@ -50,49 +41,34 @@ export default function Profile({ SetisOnboardingCompleted, ...props }) {
       setPhonenumber(phonenumber);
       console.log("Login details retrieved successfully");
     } catch (error) {
-      console.log("Error retrieving login details");
+      console.log("Error retrieving login details:", error);
     }
   };
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
 
-
-    //Picking a new profile picture
-    const pickImage = async () => {
-      // No permissions request is necessary for launching the image library
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-  
-      console.log(result);
-
-      try {
-        await AsyncStorage.setItem("image", JSON.stringify(result.assets[0].uri))
-        console.log("image uploaded")
-      } catch (error) {
-        console.log("error 5")
-      }
-  
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    };
-
-
-    //Removing profile picture
-    const removeImage = async () => {
-      try {
-        let removal = await AsyncStorage.removeItem("image");
-        setImage(false);
-
-        SetisOnboardingCompleted(false);
-        console.log('Profile image deleted')
-      } catch {
-        console.log('Error removing profile image')
-      }
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setImage(uri);
+      await AsyncStorage.setItem("image", JSON.stringify(uri)); // Save the new image URI
     }
+  };
+
+  const removeImage = async () => {
+    try {
+      await AsyncStorage.removeItem("image");
+      setImage(null); // Set image to null after removal
+      console.log("Profile image deleted");
+    } catch (error) {
+      console.log("Error removing profile image:", error);
+    }
+  };
 
   // Save all changes to AsyncStorage
   const saveallchanges = async () => {
@@ -114,7 +90,7 @@ export default function Profile({ SetisOnboardingCompleted, ...props }) {
   const logout = async () => {
     try {
       await AsyncStorage.clear();
-      setImage(false);
+      setImage(null);
       setFirstname("");
       setLastname("");
       setEmail("");
@@ -129,12 +105,11 @@ export default function Profile({ SetisOnboardingCompleted, ...props }) {
     }
   };
 
-  const placeholder = (firstname.charAt(0) + lastname.charAt(0));
-
   useEffect(() => {
-    getLoginDetails(); // Fetch data from AsyncStorage when component mounts
-  }, [image]);
+    getLoginDetails();
+  }, []);
 
+  const placeholder = (firstname.charAt(0) + lastname.charAt(0))
 
   return (
     <ScrollView style={styles.container}>
@@ -146,20 +121,20 @@ export default function Profile({ SetisOnboardingCompleted, ...props }) {
         <Text style={styles.logotext}>Little Lemon</Text>
       </View>
       <Text style={styles.headerText}>Personal information</Text>
-      <Text style={{marginLeft: 37}}>Avatar</Text>
+      <Text style={{ marginLeft: 37 }}>Avatar</Text>
       <View style={styles.avatarview}>
-        <ImageBackground source={{ uri: image }} style={styles.profileimage}>
-        {!image && <Text style={styles.profileimagetext}>{placeholder}</Text>}
-        </ImageBackground>
-        <Pressable 
-        style={styles.changebutton}
-        onPress={pickImage}
-        >
+        <View style={styles.profileimageContainer}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.profileimage} />
+          ) : (
+            <Text style={styles.profileimageText}>{placeholder}</Text>
+          )}
+        </View>
+
+        <Pressable style={styles.changebutton} onPress={pickImage}>
           <Text style={styles.changebuttontext}>Change</Text>
         </Pressable>
-        <Pressable 
-        style={styles.removebutton}
-        onPress={removeImage}>
+        <Pressable style={styles.removebutton} onPress={removeImage}>
           <Text style={styles.removebuttontext}>Remove</Text>
         </Pressable>
       </View>
@@ -273,28 +248,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     margin: 7,
   },
-  profileimage: {
+  profileimageContainer: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    overflow: 'hidden',
     marginLeft: 20,
-    fontSize: 16,
-    //color: '#FFFFFF',
-    textAlign: 'center',
-    backgroundColor: '#F4CE14',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+    backgroundColor: "#495E57",
   },
-  profileimagetext: {
-    height: 50,
-    width: 50,
+  profileimageText: {
+    fontSize: 30,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  profileimage: {
+    width: 70,
+    height: 70,
     borderRadius: 50,
-    color: '#FFFFFF',
-    //justifyContent: 'center',
-    textAlign: 'center',
-    margin: 15,
-    marginLeft: 12,
-    fontSize: 37,
+    borderWidth: 2,
+    borderColor: "#fff",
+    resizeMode: "cover",
   },
+
   changebutton: {
     fontSize: 22,
     padding: 10,
@@ -378,6 +356,27 @@ const styles = StyleSheet.create({
   },
   logouttext: {
     color: "#333333",
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  endingview: {
+    flexDirection: "row",
+    margin: 10,
+    justifyContent: "center",
+  },
+  discardchangesbutton: {
+    fontSize: 22,
+    padding: 10,
+    marginVertical: 8,
+    margin: 10,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#495E57",
+    borderWidth: 2,
+    borderRadius: 10,
+  },
+  discardchangestext: {
+    color: "#495E57",
     textAlign: "center",
     fontSize: 15,
     fontWeight: "bold",
