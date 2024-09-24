@@ -7,6 +7,7 @@ import {
   Image,
   TextInput,
   Pressable,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
@@ -80,7 +81,7 @@ export default function Profile({ SetisOnboardingCompleted }) {
         ["email", email],
         ["phonenumber", phonenumber],
       ]);
-      console.log("Changes saved successfully");
+      Alert.alert("Changes saved successfully");
     } catch (error) {
       console.log("Error saving changes:", error);
     }
@@ -98,10 +99,10 @@ export default function Profile({ SetisOnboardingCompleted }) {
 
       // Mark onboarding as incomplete
       SetisOnboardingCompleted(false);
-      alert("Logged out and cleared all data");
+      Alert.alert("Logged out and cleared all data");
       console.log("Logged out and cleared all data");
     } catch (error) {
-      alert("Error during logout");
+      Alert.alert("Error during logout");
     }
   };
 
@@ -115,12 +116,12 @@ export default function Profile({ SetisOnboardingCompleted }) {
     <ScrollView style={styles.container}>
       <View style={styles.headerwrapper}>
         <Image
-          style={styles.logoimage}
+          style={styles.headerimage}
           source={require("../img/littlelemonicon.png")}
         />
-        <Text style={styles.logotext}>Little Lemon</Text>
+        <Text style={styles.headertext}>Little Lemon</Text>
       </View>
-      <Text style={styles.headerText}>Personal information</Text>
+      <Text style={styles.titleText}>Personal information</Text>
       <Text style={{ marginLeft: 37 }}>Avatar</Text>
       <View style={styles.avatarview}>
         <View style={styles.profileimageContainer}>
@@ -130,7 +131,6 @@ export default function Profile({ SetisOnboardingCompleted }) {
             <Text style={styles.profileimageText}>{placeholder}</Text>
           )}
         </View>
-
         <Pressable style={styles.changebutton} onPress={pickImage}>
           <Text style={styles.changebuttontext}>Change</Text>
         </Pressable>
@@ -223,13 +223,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 10,
   },
-  logoimage: {
+  headerimage: {
     width: 50,
     height: 70,
     resizeMode: "contain",
     marginTop: 10,
   },
-  logotext: {
+  headertext: {
     paddingRight: 10,
     paddingLeft: 20,
     paddingTop: 20,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     color: "#495E57",
     textAlign: "center",
   },
-  headerText: {
+  titleText: {
     fontSize: 20,
     fontWeight: "bold",
     margin: 5,

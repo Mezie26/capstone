@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
 import Onboarding from "./screens/Onboarding";
+import HomeScreen from "./screens/HomeScreen";
 import Profile from "./screens/Profile";
 import SplashScreen from "./screens/SplashScreen";
 import { NavigationContainer } from "@react-navigation/native";
@@ -41,9 +42,12 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator>
         {isOnboardingCompleted ? (
+        <>
+        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Profile">
-          {props => <Profile {...props} SetisOnboardingCompleted={SetisOnboardingCompleted}/>}
+            {props => <Profile {...props} SetisOnboardingCompleted={SetisOnboardingCompleted} />}
         </Stack.Screen>
+        </>
         ) : (
           <Stack.Screen name="Onboarding">
             {props => <Onboarding {...props} SetisOnboardingCompleted={SetisOnboardingCompleted}/>}

@@ -21,7 +21,7 @@ export default function Onboarding({ navigation, SetisOnboardingCompleted }) {
         ["firstname", firstname],
         ["email", email],
       ]);
-      Alert.alert("Onboarding Completed", "Your data has been saved.");
+      Alert.alert("Logged in successfully");
       SetisOnboardingCompleted(true); // Update state in App to navigate to Profile
       navigation.navigate("Profile"); // Navigate to Profile screen
     } catch (error) {
