@@ -7,15 +7,15 @@ import {
     Image, 
     Pressable,
     FlatList,
-    StatusBar} from "react-native";
-import { Menu, Searchbar} from "react-native-paper";
+  } from "react-native";
+import { Searchbar } from "react-native-paper";
 import * as SQLite from 'expo-sqlite';
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen ({navigation}) {
     const [firstname, setFirstname] = useState("");
     const [image, setImage] = useState(null);
     const [data, setData] = useState([]);
+    const [filterSelection, setFilterSelection] = useState(true)
 
 
     const getHomeScreenDetails = async () => {
@@ -40,8 +40,9 @@ export default function HomeScreen ({navigation}) {
             "CREATE TABLE IF NOT EXISTS menu(id INTEGER PRIMARY KEY NOT NULL, name TEXT, price INTEGER, description TEXT, image TEXT, category TEXT)"
           )
           let menuItems = await db.getAllAsync('SELECT * FROM menu');
-          setData(menuItems)
-          console.log(menuItems)
+          setData(menuItems);
+          console.log('Menu Items retrieved successfully!!!');
+          setFilterSelection(true);
 
 
           //Fetch and update data
@@ -74,12 +75,14 @@ export default function HomeScreen ({navigation}) {
               //Retrieve and Render SQLite Data in Flatlist
               const retrievedMenuData = await db.getAllAsync('SELECT * FROM menu');
               setData(retrievedMenuData);
-              console.log('Menu data retrieved successfully!!!')
+              console.log('Menu data retrieved successfully!!!');
+              setFilterSelection(true);
             }
         } catch (error) {
           console.log('Error retrieving data from database')
         }
     }
+
 
     useEffect(()=>{
         getHomeScreenDetails();
@@ -104,8 +107,22 @@ export default function HomeScreen ({navigation}) {
       )
     };
 
+    async function filter(category) {
+      try {
+        const db = SQLite.openDatabaseSync('little_lemon');
+        console.log('database opened')
+        const filteredData = await db.getAllAsync(`SELECT * FROM menu WHERE category = "${category}"`);
+        console.log('filtering')
+        setData(filteredData)
+        setFilterSelection(false)
+        console.log('data filtered')
+      } catch (error) {
+        console.log('error filtering data')
+      }
+    }
+
     return(
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
         <View style={styles.headerwrapper}>
            <Image
              style={styles.headerimage}
@@ -140,26 +157,53 @@ export default function HomeScreen ({navigation}) {
               elevation={0}
               />
           </View>
+          <View style={styles.titleView}>
+            <Text style={styles.titleText}>ORDER FOR DELIVERY!</Text>
+            <Image source={require('../img/Delivery van.png')} style={styles.titleImage} />
+          </View>
+          <View style={{flexDirection: 'row'}}>
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("starters") : getHomeScreenDetails()
+          }}>
+            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Starters</Text>
+          </Pressable>
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("mains") : getHomeScreenDetails()
+          }}>
+            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Mains</Text>
+          </Pressable>
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("desserts") : getHomeScreenDetails()
+          }}>
+            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Desserts</Text>
+          </Pressable>
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("drinks") : getHomeScreenDetails()
+          }}>
+            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Drinks</Text>
+          </Pressable>
+          </View>
           <FlatList
             data={data}
             renderItem={({item}) => (
               <Item name={item.name} price={item.price} description={item.description} image={item.image}/>
             )}
             ItemSeparatorComponent={seperator}></FlatList>
-       </SafeAreaView>
+       </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: StatusBar.currentHeight,
       },
       headerwrapper: {
         flex: 1,
         flexDirection: "row",
         justifyContent: "flex-end",
-        marginBottom: 70,
+        marginBottom: 60,
+        marginTop: 10,
       },
       headerimage: {
         width: 30,
@@ -174,6 +218,7 @@ const styles = StyleSheet.create({
         marginRight: 60,
         height: 200,
         fontSize: 20,
+        fontWeight: 'bold',
         color: "#495E57",
         textAlign: "center",
       },
@@ -208,7 +253,7 @@ const styles = StyleSheet.create({
       },
       bannerBackground: {
         height: 220,
-        backgroundColor: '#495E57'
+        backgroundColor: '#495E57',
       },
       bannerHeader: {
         fontSize: 40,
@@ -273,5 +318,37 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         textAlign: 'auto',
         margin: 10,
+      },
+      titleView: {
+        flexDirection: 'row',
+        margin: 10,
+      },
+      titleText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333333',
+        marginRight: 20,
+      },
+      titleImage: {
+        height: 20,
+        width: 50,
+        resizeMode: 'contain'
+      },
+      menuFilterButton: {
+        //backgroundColor: filterSelection ? '#495E57': '#EDEFEE',
+        padding: 5,
+        width: 70,
+        borderRadius: 10,
+        margin: 10,
+        marginTop: 3,
+        marginRight: 20,
+        textAlign: 'center'
+      },
+      menuFilterText: {
+        textAlign: 'center',
+        fontSize: 13,
+        fontWeight: 'bold',
+        paddingTop: 3,
+        paddingBottom: 3,
       },
 })
