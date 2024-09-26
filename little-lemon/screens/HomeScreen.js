@@ -10,12 +10,15 @@ import {
   } from "react-native";
 import { Searchbar } from "react-native-paper";
 import * as SQLite from 'expo-sqlite';
+import debounce from "lodash.debounce";
 
 export default function HomeScreen ({navigation}) {
     const [firstname, setFirstname] = useState("");
     const [image, setImage] = useState(null);
     const [data, setData] = useState([]);
-    const [filterSelection, setFilterSelection] = useState(true)
+    const [filterSelection, setFilterSelection] = useState(true);
+    const [filterButtonStyle, setFilterButtonStyle] = useState("");
+    const [searchBarText, setSearchBarText] = useState("");
 
 
     const getHomeScreenDetails = async () => {
@@ -43,6 +46,7 @@ export default function HomeScreen ({navigation}) {
           setData(menuItems);
           console.log('Menu Items retrieved successfully!!!');
           setFilterSelection(true);
+          setFilterButtonStyle("");
 
 
           //Fetch and update data
@@ -77,6 +81,7 @@ export default function HomeScreen ({navigation}) {
               setData(retrievedMenuData);
               console.log('Menu data retrieved successfully!!!');
               setFilterSelection(true);
+              setFilterButtonStyle("");
             }
         } catch (error) {
           console.log('Error retrieving data from database')
@@ -107,14 +112,29 @@ export default function HomeScreen ({navigation}) {
       )
     };
 
-    async function filter(category) {
+    const handleSearchChange = async (text) => {
+      setSearchBarText(text);
+        try {
+          const db = SQLite.openDatabaseSync('little_lemon');
+          console.log('database opened');
+          const queriedData = await db.getAllAsync(`SELECT * FROM menu WHERE name LIKE "%${text}%"`);
+          debounce(handleSearchChange, 500)
+          console.log("searching");
+          setData(queriedData);
+        } catch (error) {
+          console.log("error searching data")
+        }
+      }
+
+    async function filter(category, filterButtonColor) {
       try {
         const db = SQLite.openDatabaseSync('little_lemon');
         console.log('database opened')
         const filteredData = await db.getAllAsync(`SELECT * FROM menu WHERE category = "${category}"`);
         console.log('filtering')
-        setData(filteredData)
-        setFilterSelection(false)
+        setData(filteredData);
+        setFilterSelection(false);
+        setFilterButtonStyle(filterButtonColor)
         console.log('data filtered')
       } catch (error) {
         console.log('error filtering data')
@@ -150,8 +170,8 @@ export default function HomeScreen ({navigation}) {
               <Searchbar
               placeholder="Search"
               placeholderTextColor='#A9A9A9'
-              //onChangeText={handleSearchChange}
-              //value={searchBarText}
+              onChangeText={handleSearchChange}
+              value={searchBarText}
               style={styles.searchBar}
               inputStyle={styles.searchtext}
               elevation={0}
@@ -162,25 +182,25 @@ export default function HomeScreen ({navigation}) {
             <Image source={require('../img/Delivery van.png')} style={styles.titleImage} />
           </View>
           <View style={{flexDirection: 'row'}}>
-          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
-            filter("starters") : getHomeScreenDetails()
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterButtonStyle !== "starters" ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("starters", "starters") : getHomeScreenDetails()
           }}>
-            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Starters</Text>
+            <Text style={{...styles.menuFilterText, color: filterButtonStyle !== "starters" ? '#495E57' : '#EDEFEE'}}>Starters</Text>
           </Pressable>
-          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
-            filter("mains") : getHomeScreenDetails()
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterButtonStyle !== "mains" ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("mains", "mains") : getHomeScreenDetails()
           }}>
-            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Mains</Text>
+            <Text style={{...styles.menuFilterText, color: filterButtonStyle !== "mains" ? '#495E57' : '#EDEFEE'}}>Mains</Text>
           </Pressable>
-          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
-            filter("desserts") : getHomeScreenDetails()
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterButtonStyle !== "desserts" ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("desserts", "desserts") : getHomeScreenDetails()
           }}>
-            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Desserts</Text>
+            <Text style={{...styles.menuFilterText, color: filterButtonStyle !== "desserts" ? '#495E57' : '#EDEFEE'}}>Desserts</Text>
           </Pressable>
-          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterSelection ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
-            filter("drinks") : getHomeScreenDetails()
+          <Pressable style={{...styles.menuFilterButton, backgroundColor: filterButtonStyle !== "drinks" ? '#D3D3D3' : '#495E57'}} onPress={()=> {filterSelection ? 
+            filter("drinks", "drinks") : getHomeScreenDetails()
           }}>
-            <Text style={{...styles.menuFilterText, color: filterSelection ? '#495E57' : '#EDEFEE'}}>Drinks</Text>
+            <Text style={{...styles.menuFilterText, color: filterButtonStyle !== "drinks" ? '#495E57' : '#EDEFEE'}}>Drinks</Text>
           </Pressable>
           </View>
           <FlatList
@@ -199,10 +219,8 @@ const styles = StyleSheet.create({
         flex: 1,
       },
       headerwrapper: {
-        flex: 1,
         flexDirection: "row",
         justifyContent: "flex-end",
-        marginBottom: 60,
         marginTop: 10,
       },
       headerimage: {
@@ -213,10 +231,10 @@ const styles = StyleSheet.create({
       headertext: {
         paddingRight: 10,
         paddingLeft: 10,
-        paddingTop: 10,
+        paddingTop: 6,
         paddingBottom: 10,
         marginRight: 60,
-        height: 200,
+        height: 60,
         fontSize: 20,
         fontWeight: 'bold',
         color: "#495E57",
@@ -226,7 +244,6 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        marginLeft: 10,
         marginRight: 20,
         flexDirection: "row",
         justifyContent: "center",
@@ -252,7 +269,8 @@ const styles = StyleSheet.create({
         resizeMode: "cover",
       },
       bannerBackground: {
-        height: 220,
+        marginTop: 1,
+        height: 240,
         backgroundColor: '#495E57',
       },
       bannerHeader: {
@@ -274,8 +292,8 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#EDEFEE',
         marginTop: 10,
-        height: 55,
-        width: 300,
+        height: 60,
+        width: 290,
         marginLeft: 10,
         marginBottom: 1,
       },
@@ -335,7 +353,6 @@ const styles = StyleSheet.create({
         resizeMode: 'contain'
       },
       menuFilterButton: {
-        //backgroundColor: filterSelection ? '#495E57': '#EDEFEE',
         padding: 5,
         width: 70,
         borderRadius: 10,
